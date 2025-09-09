@@ -1,25 +1,23 @@
 # Order Execution Engine
 
-A high-performance order execution engine that processes market orders with DEX routing and real-time WebSocket status updates. This implementation uses a mock approach to simulate DEX interactions while demonstrating the complete order lifecycle and routing logic.
+An order execution engine that processes market orders with DEX routing and real time WebSocket status updates. This implementation uses a mock approach to simulate DEX interactions while demonstrating the complete order lifecycle and routing logic.
 
-## 🎯 Order Type Choice: Market Orders
+## Order Type Choice: Market Orders
 
-**Why Market Orders?**
-Market orders provide immediate execution at the best available price, making them ideal for demonstrating real-time DEX routing and price comparison. They showcase the core functionality of finding the optimal execution venue and handling slippage protection.
+Market orders provide immediate execution at the best available price, making them ideal for demonstrating real time DEX routing and price comparison. They showcase the core functionality of finding the optimal execution venue and handling slippage protection.
 
 **Extending to Other Order Types:**
 - **Limit Orders**: Add price threshold checking in the routing phase before execution
 - **Sniper Orders**: Implement token launch detection and conditional execution logic
 
-## 🏗️ Architecture
+## Architecture
 
 ### Core Components
 
 1. **Order Controller** - Handles HTTP → WebSocket pattern
 2. **DEX Router** - Compares Raydium vs Meteora quotes
 3. **Queue System** - Manages concurrent order processing with BullMQ
-4. **WebSocket Stream** - Real-time status updates
-5. **Database Layer** - PostgreSQL for order history (optional)
+4. **WebSocket Stream** - Real time status updates
 
 ### Order Execution Flow
 
@@ -29,13 +27,12 @@ POST /api/orders/execute → Order Validation → Queue → WebSocket Connection
 pending → routing → building → submitted → confirmed/failed
 ```
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 
 - Node.js 18+
 - Redis (required for queue processing)
-- PostgreSQL (optional, for order history)
 
 ### Local Development
 
@@ -61,7 +58,7 @@ pending → routing → building → submitted → confirmed/failed
    npm start
    ```
 
-### 🧪 Quick Test - Fix the Postman Loop Issue
+### Quick Test - Fix the Postman Loop Issue
 
 **The Problem**: You see "pending" on POST, then "confirming" on GET, but no continuous updates.
 
@@ -293,35 +290,28 @@ npm run test:watch
 ```
 
 ### Test Coverage
-- ✅ DEX routing logic (price comparison, fee calculation)
-- ✅ Queue behavior (concurrent processing, retry logic)
-- ✅ WebSocket lifecycle (connection, status streaming, cleanup)
-- ✅ API endpoints (validation, error handling)
-- ✅ Order status transitions
-- ✅ Error handling and recovery
-- ✅ Postman collection with all test scenarios
+- DEX routing logic (price comparison, fee calculation)
+- Queue behavior (concurrent processing, retry logic)
+- WebSocket lifecycle (connection, status streaming, cleanup)
+- API endpoints (validation, error handling)
+- Order status transitions
+- Error handling and recovery
+- Postman collection with all test scenarios
 
-## 📊 Performance Metrics
+## Performance Metrics
 
 - **Concurrent Orders**: Up to 10 simultaneous
 - **Processing Rate**: ~100 orders/minute
 - **Retry Logic**: 3 attempts with exponential backoff
 - **WebSocket Updates**: 1-second polling interval
 
-## 🔧 Configuration
+## Configuration
 
 ### Environment Variables
 
 ```env
-# Server
-PORT=3000
-NODE_ENV=development
-
 # Redis (Required)
 REDIS_URL=redis://localhost:6379
-
-# Database (Optional)
-DATABASE_URL=postgresql://user:pass@localhost:5432/order_engine
 ```
 
 ### Queue Configuration
@@ -346,15 +336,6 @@ The engine provides detailed logging for:
 - DEX routing decisions
 - Performance metrics
 - Error conditions
-
-### Database Views (if PostgreSQL is configured)
-```sql
--- Order statistics by date
-SELECT * FROM order_stats;
-
--- DEX performance comparison
-SELECT * FROM dex_performance;
-```
 
 ## 🚀 Deployment
 
@@ -401,21 +382,14 @@ docker-compose -f docker-compose.prod.yml up -d
    - **Problem**: You see "pending" on POST, then "confirming" on GET, but no continuous updates
    - **Solution**: Use one of these methods for continuous updates:
      - **WebSocket**: `ws://localhost:3000/api/orders/{orderId}/status` (Method A above)
-     - **SSE Polling**: `GET /api/orders/{orderId}?poll=true&interval=1000` (Method B above)
      - **Regular GET**: Only shows status once - this is expected behavior
-
-5. **Server-Sent Events (SSE) Not Working in Postman**
-   - Make sure you're using the correct URL: `http://localhost:3000/api/orders/{orderId}?poll=true`
-   - Check that the `poll=true` parameter is included
-   - Ensure you're using a recent version of Postman that supports SSE
-   - Try refreshing the request if it doesn't show continuous updates
 
 ### Debug Mode
 ```bash
 DEBUG=* npm start
 ```
 
-## 📚 API Documentation
+## API Documentation
 
 ### Postman Collection
 Import `postman_collection.json` for comprehensive API testing including:
@@ -457,55 +431,39 @@ order-execution-engine/
 └── README.md             # This file
 ```
 
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Add tests for new functionality
-4. Ensure all tests pass
-5. Submit a pull request
-
-## 📄 License
-
-MIT License - see LICENSE file for details
-
----
-
 **Note**: This is a mock implementation for demonstration purposes. For production use with real DEXs, integrate with actual Raydium and Meteora SDKs and implement proper error handling for network conditions.
 
-## ✅ Current Status
+## Current Status
 
 The Order Execution Engine is **fully functional** with:
-- ✅ HTTP → WebSocket pattern working
-- ✅ Complete order lifecycle (pending → routing → building → submitted → confirmed)
-- ✅ DEX routing with detailed price comparison
-- ✅ Queue processing with BullMQ
-- ✅ Real-time WebSocket status updates
-- ✅ Server-Sent Events (SSE) polling support
-- ✅ Error handling and retry logic
-- ✅ Comprehensive test suite
-- ✅ **FIXED: Postman loop issue** - Now supports continuous status updates
+- HTTP → WebSocket pattern working
+- Complete order lifecycle (pending → routing → building → submitted → confirmed)
+- DEX routing with detailed price comparison
+- Queue processing with BullMQ
+- Real-time WebSocket status updates
+- Server-Sent Events (SSE) polling support
+- Error handling and retry logic
+- Comprehensive test suite
+- **FIXED: Postman loop issue** - Now supports continuous status updates
 
-## 📋 Summary: Three Ways to Monitor Order Status
+## 📋 Summary: Monitor Order Status
 
 | Method | URL | Description | Best For |
 |--------|-----|-------------|----------|
 | **WebSocket** | `ws://localhost:3000/api/orders/{orderId}/status` | Real-time updates | Live monitoring |
-| **SSE Polling** | `GET /api/orders/{orderId}?poll=true&interval=1000` | Continuous polling | Postman testing |
-| **Single Check** | `GET /api/orders/{orderId}` | One-time status | Quick checks |
 
-**The original issue**: Regular GET requests only show status once. **The solution**: Use WebSocket or SSE polling for continuous updates in a loop.
+**The original issue**: Regular GET requests only show status once. **The solution**: Use WebSocket for continuous updates in a loop.
 
-## ✅ Included and Working (Submission Checklist)
+## Included and Working (Submission Checklist)
 
-- ✅ Market order flow with DEX routing (Raydium vs Meteora), realistic delays, slippage, and decision logs
-- ✅ HTTP → WebSocket live status streaming (pending → routing → building → submitted → confirmed/failed)
-- ✅ BullMQ + Redis queue (concurrency: 10, retries: 3 with exponential backoff)
-- ✅ WebSocket loop mode for demos (auto-creates new orders and streams every step)
-- ✅ Redis-backed status history so GET/SSE can show all steps, not just final
-- ✅ Postman collection updated (single, SSE polling, WebSocket, WebSocket loop)
-- ✅ README includes setup, rationale for market orders, and extending to limit/sniper
-- ✅ ≥10 unit/integration tests covering routing, queue behaviour, APIs, and WebSocket
+- Market order flow with DEX routing (Raydium vs Meteora), realistic delays, slippage, and decision logs
+- HTTP → WebSocket live status streaming (pending → routing → building → submitted → confirmed/failed)
+- BullMQ + Redis queue (concurrency: 10, retries: 3 with exponential backoff)
+- WebSocket loop mode for demos (auto-creates new orders and streams every step)
+- Redis-backed status history so GET/SSE can show all steps, not just final
+- Postman collection updated (single, SSE polling, WebSocket, WebSocket loop)
+- README includes setup, rationale for market orders, and extending to limit/sniper
+- ≥10 unit/integration tests covering routing, queue behaviour, APIs, and WebSocket
 
 ### How to Run
 
@@ -528,10 +486,8 @@ npm test
 - Submit: `POST http://localhost:3000/api/orders/execute`
 - WebSocket steps: `ws://localhost:3000/api/orders/{orderId}/status`
 - WebSocket loop: `ws://localhost:3000/api/orders/{orderId}/status?loop=true`
-- SSE with history: `http://localhost:3000/api/orders/{orderId}?poll=true&interval=1000&includeHistory=true`
-- Single GET with history: `http://localhost:3000/api/orders/{orderId}?includeHistory=true`
-
+  
 Notes:
-- We selected Market orders and documented why, plus how to extend to limit/sniper (see “Order Type Choice” above).
+- We selected Market orders, plus explained how to extend to limit/sniper (see “Order Type Choice” above).
 - DEX routing is mocked with realistic variance and detailed logs.
 - The pattern is POST + dedicated WebSocket endpoint, which is the standard equivalent for demos.
