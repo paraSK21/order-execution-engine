@@ -1,0 +1,220 @@
+{
+  "info": {
+    "name": "Order Execution Engine",
+    "_postman_id": "order-execution-engine",
+    "description": "Collection for testing Order Execution Engine API with HTTP → WebSocket pattern",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Submit Order - SOL to USDC",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"tokenIn\": \"SOL\",\n  \"tokenOut\": \"USDC\",\n  \"amount\": 10\n}"
+        },
+        "url": {
+          "raw": "{{url}}/api/orders/execute",
+          "host": ["{{url}}"],
+          "path": ["api", "orders", "execute"]
+        },
+        "description": "Submit a market order to swap 10 SOL for USDC"
+      }
+    },
+    {
+      "name": "Submit Order - USDC to SOL",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"tokenIn\": \"USDC\",\n  \"tokenOut\": \"SOL\",\n  \"amount\": 1000\n}"
+        },
+        "url": {
+          "raw": "{{url}}/api/orders/execute",
+          "host": ["{{url}}"],
+          "path": ["api", "orders", "execute"]
+        },
+        "description": "Submit a market order to swap 1000 USDC for SOL"
+      }
+    },
+    {
+      "name": "Submit Order - Large Amount",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"tokenIn\": \"SOL\",\n  \"tokenOut\": \"USDC\",\n  \"amount\": 100\n}"
+        },
+        "url": {
+          "raw": "{{url}}/api/orders/execute",
+          "host": ["{{url}}"],
+          "path": ["api", "orders", "execute"]
+        },
+        "description": "Submit a large market order to test routing decisions"
+      }
+    },
+    {
+      "name": "Submit Invalid Order - Missing TokenIn",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"tokenOut\": \"USDC\",\n  \"amount\": 10\n}"
+        },
+        "url": {
+          "raw": "{{url}}/api/orders/execute",
+          "host": ["{{url}}"],
+          "path": ["api", "orders", "execute"]
+        },
+        "description": "Test validation with missing tokenIn parameter"
+      }
+    },
+    {
+      "name": "Submit Invalid Order - Zero Amount",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"tokenIn\": \"SOL\",\n  \"tokenOut\": \"USDC\",\n  \"amount\": 0\n}"
+        },
+        "url": {
+          "raw": "{{url}}/api/orders/execute",
+          "host": ["{{url}}"],
+          "path": ["api", "orders", "execute"]
+        },
+        "description": "Test validation with zero amount"
+      }
+    },
+    {
+      "name": "Get Order Status (Single Check)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{url}}/api/orders/{{orderId}}",
+          "host": ["{{url}}"],
+          "path": ["api", "orders", "{{orderId}}"]
+        },
+        "description": "Get the current status of an order by ID (one-time check)"
+      }
+    },
+    {
+      "name": "Get Order Status (Continuous Polling)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{url}}/api/orders/{{orderId}}?poll=true&interval=1000",
+          "host": ["{{url}}"],
+          "path": ["api", "orders", "{{orderId}}"],
+          "query": [
+            {
+              "key": "poll",
+              "value": "true",
+              "description": "Enable continuous polling"
+            },
+            {
+              "key": "interval",
+              "value": "1000",
+              "description": "Polling interval in milliseconds"
+            }
+          ]
+        },
+        "description": "Get continuous status updates using Server-Sent Events (SSE). You'll see status updates in a loop until the order is complete."
+      }
+    },
+    {
+      "name": "WebSocket Order Status Stream",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "ws://{{url}}/api/orders/{{orderId}}/status",
+          "protocol": "ws",
+          "host": ["{{url}}"],
+          "path": ["api", "orders", "{{orderId}}", "status"]
+        },
+        "description": "Connect to WebSocket for real-time order status updates. You'll see continuous status updates: pending → routing → building → submitted → confirmed. Replace {{orderId}} with actual order ID from POST response."
+      }
+    },
+    {
+      "name": "WebSocket Order Status Stream (LOOP MODE)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "ws://{{url}}/api/orders/{{orderId}}/status?loop=true",
+          "protocol": "ws",
+          "host": ["{{url}}"],
+          "path": ["api", "orders", "{{orderId}}", "status"],
+          "query": [
+            {
+              "key": "loop",
+              "value": "true",
+              "description": "Enable loop mode - keeps running even after order completion"
+            }
+          ]
+        },
+        "description": "Connect to WebSocket in LOOP MODE. Shows continuous status updates and keeps running even after order completion. Perfect for testing - you'll see the order lifecycle repeatedly. Replace {{orderId}} with actual order ID from POST response."
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "url",
+      "value": "http://localhost:3000",
+      "description": "Base URL for the Order Execution Engine API"
+    },
+    {
+      "key": "orderId",
+      "value": "",
+      "description": "Order ID returned from POST /api/orders/execute - update this after submitting an order"
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Auto-update orderId variable if it's in the response",
+          "if (pm.response && pm.response.json && pm.response.json.orderId) {",
+          "    pm.collectionVariables.set('orderId', pm.response.json.orderId);",
+          "    console.log('Updated orderId variable:', pm.response.json.orderId);",
+          "}"
+        ]
+      }
+    }
+  ]
+}
