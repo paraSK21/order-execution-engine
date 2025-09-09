@@ -126,7 +126,7 @@ GET /api/orders/{orderId}
 const ws = new WebSocket('ws://localhost:3000/api/orders/{orderId}/status');
 ```
 
-## 🔄 Order Status Lifecycle
+## Order Status Lifecycle
 
 | Status | Description | Duration |
 |--------|-------------|----------|
@@ -137,7 +137,7 @@ const ws = new WebSocket('ws://localhost:3000/api/orders/{orderId}/status');
 | `confirmed` | Transaction successful | ~2-3s |
 | `failed` | Execution failed | Variable |
 
-## 🎛️ DEX Routing Logic
+## DEX Routing Logic
 
 The engine fetches quotes from both Raydium and Meteora, then selects the optimal venue based on:
 
@@ -151,7 +151,7 @@ The engine fetches quotes from both Raydium and Meteora, then selects the optima
 Raydium quote: SOL/USDC - Price: 0.998500, Fee: 0.30%
 Meteora quote: SOL/USDC - Price: 1.008200, Fee: 0.20%
 
-📊 Routing Decision:
+  Routing Decision:
    Raydium:  9.970000 USDC (0.30% fee)
    Meteora:  10.080000 USDC (0.20% fee)
    Selected: METEORA - meteora provides 0.110000 more USDC (1.10% better)
@@ -406,7 +406,6 @@ The Order Execution Engine is **fully functional** with:
 - DEX routing with detailed price comparison
 - Queue processing with BullMQ
 - Real-time WebSocket status updates
-- Server-Sent Events (SSE) polling support
 - Error handling and retry logic
 - Comprehensive test suite
 - **FIXED: Postman loop issue** - Now supports continuous status updates
