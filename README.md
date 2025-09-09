@@ -38,7 +38,7 @@ pending → routing → building → submitted → confirmed/failed
 
 1. **Clone and Install**
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/paraSK21/order-execution-engine.git
    cd order-execution-engine
    npm install
    ```
@@ -47,9 +47,6 @@ pending → routing → building → submitted → confirmed/failed
    ```bash
    # Using Docker
    docker run -d -p 6379:6379 redis:7.2
-   
-   # Or using local Redis
-   redis-server
    ```
 
 3. **Build and Start**
@@ -70,21 +67,16 @@ pending → routing → building → submitted → confirmed/failed
    Body: {"tokenIn": "SOL", "tokenOut": "USDC", "amount": 10}
    ```
 
-2. **Watch Continuous Updates** (Choose ONE method):
+2. **Watch Continuous Updates**:
    
-   **Method A - WebSocket (Recommended)**:
+   **Method A - WebSocket**:
    ```
    WebSocket: ws://localhost:3000/api/orders/{orderId}/status
    ```
    
-   **Method B - Server-Sent Events**:
+   **Method B - WebSocket loop**:
    ```
-   GET http://localhost:3000/api/orders/{orderId}?poll=true&interval=1000
-   ```
-   
-   **Method C - Single Check** (one-time only):
-   ```
-   GET http://localhost:3000/api/orders/{orderId}
+   WebSocket: ws://localhost:3000/api/orders/{orderId}/status?loop=true
    ```
 
 You'll now see the full order lifecycle: `pending` → `routing` → `building` → `submitted` → `confirmed`
@@ -99,11 +91,11 @@ docker-compose up -d
 docker-compose logs -f app
 ```
 
-## 📡 API Endpoints
+## API Endpoints
 
 ### Submit Order
 ```http
-POST /api/orders/execute
+POST http://localhost:3000/api/orders/execute
 Content-Type: application/json
 
 {
@@ -122,28 +114,16 @@ Content-Type: application/json
 }
 ```
 
-### Get Order Status (3 Methods)
+### Get Order Status
 
 #### Method 1: Single Status Check
 ```http
 GET /api/orders/{orderId}
 ```
 
-#### Method 2: Continuous Polling (Server-Sent Events)
-```http
-GET /api/orders/{orderId}?poll=true&interval=1000
-```
-- `poll=true` - Enables continuous polling
-- `interval=1000` - Polling interval in milliseconds (default: 1000ms)
-
-#### Method 3: WebSocket Real-time Updates
+#### Method 2: WebSocket Real-time Updates
 ```javascript
 const ws = new WebSocket('ws://localhost:3000/api/orders/{orderId}/status');
-
-ws.onmessage = (event) => {
-  const update = JSON.parse(event.data);
-  console.log(`Status: ${update.status}`);
-};
 ```
 
 ## 🔄 Order Status Lifecycle
@@ -177,7 +157,7 @@ Meteora quote: SOL/USDC - Price: 1.008200, Fee: 0.20%
    Selected: METEORA - meteora provides 0.110000 more USDC (1.10% better)
 ```
 
-## 🧪 Testing
+## Testing
 
 ### Postman Testing Guide
 
@@ -213,20 +193,6 @@ Meteora quote: SOL/USDC - Price: 1.008200, Fee: 0.20%
    - Click "Connect"
    - Watch continuous updates that keep running even after order completion
    - Perfect for testing - shows the order lifecycle repeatedly
-
-##### Method B: Server-Sent Events (SSE) Polling
-1. **Create a new GET request**
-   - URL: `http://localhost:3000/api/orders/{orderId}?poll=true&interval=1000`
-   - Replace `{orderId}` with the actual order ID from Step 1
-   - Send the request
-   - You'll see continuous updates in the response stream
-
-##### Method C: Single Status Check
-1. **Create a new GET request**
-   - URL: `http://localhost:3000/api/orders/{orderId}`
-   - Replace `{orderId}` with the actual order ID from Step 1
-   - Send the request
-   - You'll see the current status (one-time check)
 
 #### Step 3: Test Different Scenarios
 
@@ -296,7 +262,6 @@ npm run test:watch
 - API endpoints (validation, error handling)
 - Order status transitions
 - Error handling and recovery
-- Postman collection with all test scenarios
 
 ## Performance Metrics
 
@@ -328,7 +293,7 @@ REDIS_URL=redis://localhost:6379
 }
 ```
 
-## 📈 Monitoring & Logging
+## Monitoring & Logging
 
 ### Console Output
 The engine provides detailed logging for:
@@ -337,7 +302,7 @@ The engine provides detailed logging for:
 - Performance metrics
 - Error conditions
 
-## 🚀 Deployment
+## Deployment
 
 ### Production Deployment
 
@@ -359,7 +324,7 @@ The engine provides detailed logging for:
 docker-compose -f docker-compose.prod.yml up -d
 ```
 
-## 🔍 Troubleshooting
+## Troubleshooting
 
 ### Common Issues
 
@@ -413,7 +378,7 @@ Import `postman_collection.json` for comprehensive API testing including:
 }
 ```
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 order-execution-engine/
@@ -446,7 +411,7 @@ The Order Execution Engine is **fully functional** with:
 - Comprehensive test suite
 - **FIXED: Postman loop issue** - Now supports continuous status updates
 
-## 📋 Summary: Monitor Order Status
+## Summary: Monitor Order Status
 
 | Method | URL | Description | Best For |
 |--------|-----|-------------|----------|
@@ -460,8 +425,6 @@ The Order Execution Engine is **fully functional** with:
 - HTTP → WebSocket live status streaming (pending → routing → building → submitted → confirmed/failed)
 - BullMQ + Redis queue (concurrency: 10, retries: 3 with exponential backoff)
 - WebSocket loop mode for demos (auto-creates new orders and streams every step)
-- Redis-backed status history so GET/SSE can show all steps, not just final
-- Postman collection updated (single, SSE polling, WebSocket, WebSocket loop)
 - README includes setup, rationale for market orders, and extending to limit/sniper
 - ≥10 unit/integration tests covering routing, queue behaviour, APIs, and WebSocket
 
