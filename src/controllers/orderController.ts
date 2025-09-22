@@ -7,11 +7,36 @@ import * as dotenv from 'dotenv';
 
 dotenv.config();
 
-const createRedisClient = () => {
-  return createClient({ url: process.env.REDIS_URL });
+// Create a shared Redis connection pool for better concurrency
+const redisConnection = { url: process.env.REDIS_URL || 'redis://localhost:6379' };
+const redisClient = createClient(redisConnection);
+
+// Initialize Redis connection once at startup
+let redisInitialized = false;
+const initializeRedis = async () => {
+  if (!redisInitialized) {
+    try {
+      await redisClient.connect();
+      console.log('✅ Redis client connected for order controller');
+      redisInitialized = true;
+    } catch (error) {
+      console.error('❌ Failed to connect to Redis:', error);
+      throw error;
+    }
+  }
+};
+
+// Ensure Redis is connected before handling requests
+const ensureRedisConnected = async () => {
+  if (!redisClient.isOpen) {
+    await redisClient.connect();
+  }
 };
 
 export default async function orderController(fastify: FastifyInstance) {
+  // Initialize Redis connection on startup
+  await initializeRedis();
+
   // POST endpoint for order submission
   fastify.post('/api/orders/execute', async (request: FastifyRequest, reply: FastifyReply) => {
     const body = request.body as { tokenIn: string; tokenOut: string; amount: number };
@@ -31,21 +56,20 @@ export default async function orderController(fastify: FastifyInstance) {
       timestamp: new Date().toISOString()
     };
 
-    const redisClient = createRedisClient();
     try {
-      await redisClient.connect();
+      // Ensure Redis is connected (shared connection)
+      await ensureRedisConnected();
+      
       // Store initial order state
       await redisClient.set(order.orderId, JSON.stringify(order));
       
       // Add to processing queue
       await addToQueue(order);
+      
+      console.log(`✅ Order ${order.orderId} submitted successfully`);
     } catch (err) {
       console.error('Error during order submission:', err);
       return reply.status(500).send({ error: 'Failed to process order' });
-    } finally {
-      if (redisClient.isOpen) {
-        await redisClient.disconnect();
-      }
     }
 
     return reply.status(200).send({ 
@@ -70,14 +94,14 @@ export default async function orderController(fastify: FastifyInstance) {
 
     console.log(`WebSocket connection established for order: ${orderId}`);
 
-    const redisClient = createRedisClient();
     let interval: NodeJS.Timeout | null = null;
     let isConnected = true;
     let lastHistoryIndex = 0; // number of history entries already sent
     let templateOrder: Order | null = null; // used to auto-generate new orders in loop mode
 
     try {
-      await redisClient.connect();
+      // Use shared Redis connection
+      await ensureRedisConnected();
       console.log(`Redis connected for WebSocket order: ${orderId}`);
 
       // Check if order exists
@@ -85,7 +109,6 @@ export default async function orderController(fastify: FastifyInstance) {
       if (!orderData) {
         connection.socket.send(JSON.stringify({ error: 'Order not found' }));
         connection.socket.close(1000, 'Order not found');
-        await redisClient.disconnect();
         return;
       }
 
@@ -122,7 +145,7 @@ export default async function orderController(fastify: FastifyInstance) {
       // Set up status polling
       interval = setInterval(async () => {
         try {
-          if (!isConnected || !redisClient.isOpen) {
+          if (!isConnected) {
             console.log(`WebSocket disconnected for order ${orderId}, stopping polling`);
             if (interval) clearInterval(interval);
             return;
@@ -250,9 +273,7 @@ export default async function orderController(fastify: FastifyInstance) {
         clearInterval(interval);
         interval = null;
       }
-      if (redisClient.isOpen) {
-        await redisClient.disconnect();
-      }
+      // Note: We don't disconnect Redis here since it's shared
     });
 
     connection.socket.on('error', async (error) => {
@@ -264,9 +285,7 @@ export default async function orderController(fastify: FastifyInstance) {
         clearInterval(interval);
         interval = null;
       }
-      if (redisClient.isOpen) {
-        await redisClient.disconnect();
-      }
+      // Note: We don't disconnect Redis here since it's shared
     });
 
     // Handle ping/pong to keep connection alive
@@ -286,9 +305,8 @@ export default async function orderController(fastify: FastifyInstance) {
     const pollInterval = parseInt(query.interval || '1000');
     const includeHistory = query.includeHistory === 'true';
 
-    const redisClient = createRedisClient();
     try {
-        await redisClient.connect();
+        await ensureRedisConnected();
         
         if (shouldPoll) {
           // Set up Server-Sent Events for polling
@@ -320,9 +338,6 @@ export default async function orderController(fastify: FastifyInstance) {
               // Stop polling when order is complete
               if (['confirmed', 'failed'].includes(order.status)) {
                 reply.raw.end();
-                if (redisClient.isOpen) {
-                  await redisClient.disconnect();
-                }
                 return;
               }
             } catch (error) {
@@ -340,9 +355,7 @@ export default async function orderController(fastify: FastifyInstance) {
           // Clean up on connection close
           reply.raw.on('close', () => {
             clearInterval(interval);
-            if (redisClient.isOpen) {
-              redisClient.disconnect();
-            }
+            // Note: We don't disconnect Redis here since it's shared
           });
           
         } else {
@@ -363,10 +376,6 @@ export default async function orderController(fastify: FastifyInstance) {
     } catch (err) {
         console.error('Error fetching order status:', err);
         return reply.status(500).send({ error: 'Failed to fetch order status' });
-    } finally {
-        if (!shouldPoll && redisClient.isOpen) {
-            await redisClient.disconnect();
-        }
     }
   });
 }
